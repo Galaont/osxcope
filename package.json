@@ -1,0 +1,16 @@
+{
+  "name": "osxcope_p5",
+  "version": "1.0.0",
+  "description": "first try",
+  "main": "sketch.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "emre",
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor/cli": "^6.1.2",
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/ios": "^6.1.2"
+  }
+}
