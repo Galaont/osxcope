@@ -1,4 +1,4 @@
-let swipeDistance, slider, fft, mic, lp_filter, hp_filter, micLevel, minAmpThreshold, amp;
+let swipeDistance, fft, mic, lp_filter, hp_filter, micLevel, minAmpThreshold, amp, bins;
 var waveform_mode, spectrum_mode, micAccessGranted = false;
 let initialScreen = true;
 let swipeStartX, swipeEndX;
@@ -6,8 +6,9 @@ let swipeStartX, swipeEndX;
 function setup() {
 	createCanvas(windowWidth, windowHeight);
 	background(0);
-	fft = new p5.FFT(0.75);
-	amp = 2;
+	bins=2048
+	fft = new p5.FFT(0.7, bins);
+	amp = 3;
 	frameRate(30);
 	stroke(255);
 	strokeWeight(2)
@@ -22,14 +23,13 @@ function startMic() {
    micAccessGranted = true;
 
    mic = new p5.AudioIn();
-   lp_filter = new p5.LowPass();
-   hp_filter = new p5.HighPass();
 
-   lp_filter.freq(18000)
-   lp_filter.disconnect()
-
-   hp_filter.freq(25)
-   hp_filter.disconnect()
+   //lp_filter = new p5.LowPass();
+   //hp_filter = new p5.HighPass();
+   //lp_filter.freq(12000)
+   //lp_filter.disconnect()
+   //hp_filter.freq(40)
+   //hp_filter.disconnect()
 
    mic.start();
 }
@@ -44,15 +44,10 @@ function inputEnded() {
 	swipeDistance = swipeEndX - swipeStartX;
 	let distance_threshold = width>>4
 	if (swipeDistance > distance_threshold) { // Swipe right (Spectrum mode)
-		if (waveform_mode) slider.remove()
 		initialScreen = false;
 		waveform_mode = false;
 		spectrum_mode = true;
 	} else if (swipeDistance < -distance_threshold) { // Swipe left (Waveform mode)
-		slider = createSlider(1, 6, 2, 0.1);
-		slider.position(width*0.9, height*0.1);
-		slider.size(width>>3);
-		slider.style('transform', 'rotate(-90deg)');
 		initialScreen = false;
 		waveform_mode = true;
 		spectrum_mode = false;
@@ -74,14 +69,14 @@ function showInitialScreen() {
 }
 
 function fft_noise_gate() {
-	minAmpThreshold = 0.0025;
+	minAmpThreshold = 0.001;
 
 	micLevel = mic.getLevel();
-	console.log(micLevel)
+	//console.log(micLevel)
 	if (micLevel > minAmpThreshold) {
-		lp_filter.process(mic)
-		hp_filter.process(lp_filter)
-		fft.setInput(hp_filter);
+		//lp_filter.process(mic)
+		//hp_filter.process(lp_filter)
+		fft.setInput(mic);
 	 }else{
 		mic.disconnect()
 	}
@@ -108,20 +103,27 @@ function showSpectrum() {
 
 function showWaveform() {
 	fft_noise_gate()
-	amp = slider.value()
-	waveform = fft.waveform();
-	let minIndex = waveform.indexOf(Math.min(...waveform));
-	waveform = waveform.slice(minIndex).concat(waveform.slice(0, minIndex));
+	waveform = fft.waveform(bins);
+	// Limit the search to the first quarter of the waveform array
+	let quarterLength = Math.floor(waveform.length*0.5);
+	let minIndex = waveform.slice(0, quarterLength).indexOf(Math.min(...waveform.slice(0, quarterLength)));
+
+	// Align the waveform based on the calculated minimum index
+	waveform = waveform.slice(minIndex).concat(waveform.slice(1, minIndex));
+	
 	stroke(255);
 	noFill()
 	beginShape();
 	for (let i = 0; i < waveform.length; i++) {
-		let x = map(i, 0, waveform.length, 0, width);
-		let y = map(waveform[i], -1/amp, 1/amp, height, 0);
-		vertex(x, y);
+		let x = map(i, 0, waveform.length, 0, width*2);
+		//let y = map(waveform[i], -1, 1, height, 0);
+		let y = height/2
+		let y_offset = map(waveform[i], -1, 1, -height/amp, height/amp);
+		y=float(y-y_offset)
+		vertex(x,y);
 	}
+	console.log(waveform)
 	endShape();
-	//console.log(waveform)
 }
 
 function draw() {
