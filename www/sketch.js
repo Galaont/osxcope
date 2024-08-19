@@ -1,14 +1,17 @@
-let swipeDistance, fft, mic, lp_filter, hp_filter, micLevel, minAmpThreshold, amp, bins;
-var waveform_mode, spectrum_mode, micAccessGranted = false;
+let fft, amp, bins;
+let waveform_mode, spectrum_mode, micAccessGranted = false;
 let initialScreen = true;
-let swipeStartX, swipeEndX;
+let distinctCount = 0
 
 function setup() {
 	createCanvas(windowWidth, windowHeight);
+	//pixelDensity(window.devicePixelRatio);
+	pixelDensity(1)
 	background(0);
-	bins=2048
+	bins=8192
 	fft = new p5.FFT(0.7, bins);
-	amp = 3;
+	//fft = new p5.AnalyzerFFT()
+	amp = 2
 	frameRate(30);
 	stroke(255);
 	strokeWeight(2)
@@ -19,44 +22,6 @@ function windowResized() {
 	resizeCanvas(windowWidth, windowHeight);
 }
 
-function startMic() {
-   micAccessGranted = true;
-
-   mic = new p5.AudioIn();
-
-   //lp_filter = new p5.LowPass();
-   //hp_filter = new p5.HighPass();
-   //lp_filter.freq(12000)
-   //lp_filter.disconnect()
-   //hp_filter.freq(40)
-   //hp_filter.disconnect()
-
-   mic.start();
-}
-
-function inputStarted() {
-	swipeStartX = mouseX || touches[0]?.x || 0;
-}
-
-function inputEnded() {
-	if (!micAccessGranted) startMic()
-	swipeEndX = mouseX || touches[0]?.x || swipeStartX; // Handle touch and mouse
-	swipeDistance = swipeEndX - swipeStartX;
-	let distance_threshold = width>>4
-	if (swipeDistance > distance_threshold) { // Swipe right (Spectrum mode)
-		initialScreen = false;
-		waveform_mode = false;
-		spectrum_mode = true;
-	} else if (swipeDistance < -distance_threshold) { // Swipe left (Waveform mode)
-		initialScreen = false;
-		waveform_mode = true;
-		spectrum_mode = false;
-	}
-}
-
-mousePressed = touchStarted = inputStarted;
-mouseReleased = touchEnded = inputEnded;
-
 function showInitialScreen() {
 	background(0);
 	fill(255);
@@ -66,20 +31,6 @@ function showInitialScreen() {
 	textAlign(RIGHT, BOTTOM);
 	text("<- Swipe to Left for Waveform", width/16*15, height/16*15);
 	line (width, 0, 0, height)
-}
-
-function fft_noise_gate() {
-	minAmpThreshold = 0.001;
-
-	micLevel = mic.getLevel();
-	//console.log(micLevel)
-	if (micLevel > minAmpThreshold) {
-		//lp_filter.process(mic)
-		//hp_filter.process(lp_filter)
-		fft.setInput(mic);
-	 }else{
-		mic.disconnect()
-	}
 }
 
 function showSpectrum() {
@@ -102,28 +53,56 @@ function showSpectrum() {
 }
 
 function showWaveform() {
-	fft_noise_gate()
-	waveform = fft.waveform(bins);
-	// Limit the search to the first quarter of the waveform array
-	let quarterLength = Math.floor(waveform.length*0.5);
-	let minIndex = waveform.slice(0, quarterLength).indexOf(Math.min(...waveform.slice(0, quarterLength)));
+    fft_noise_gate();
+    waveform = fft.waveform(bins);
 
-	// Align the waveform based on the calculated minimum index
-	waveform = waveform.slice(minIndex).concat(waveform.slice(1, minIndex));
-	
-	stroke(255);
-	noFill()
-	beginShape();
-	for (let i = 0; i < waveform.length; i++) {
-		let x = map(i, 0, waveform.length, 0, width*2);
-		//let y = map(waveform[i], -1, 1, height, 0);
-		let y = height/2
-		let y_offset = map(waveform[i], -1, 1, -height/amp, height/amp);
-		y=float(y-y_offset)
-		vertex(x,y);
-	}
-	console.log(waveform)
-	endShape();
+	waveform = waveform.map(value => float(value * mobileMultiplier));
+    distinctCount = new Set(waveform).size;
+
+    displayDebugOverlay();
+
+    const pixelRatio = window.devicePixelRatio || 1;
+
+    // Apply scaling directly to the waveform array
+
+    // Limit the search to the first 20% of the waveform array
+    let quarterLength = Math.floor(waveform.length * 0.2);
+    let minIndex = 0;
+    let minValue = waveform[0];
+    for (let i = 1; i < quarterLength; i++) {
+        if (waveform[i] < minValue) {
+            minValue = waveform[i];
+            minIndex = i;
+        }
+    }
+    waveform = waveform.slice(minIndex).concat(waveform.slice(0, minIndex));
+
+    stroke(255);
+    noFill();
+    beginShape();
+
+    let resolution = Math.max(1, Math.floor(waveform.length / (250 * pixelRatio))); // Adjust resolution based on pixel ratio
+    let yCenter = height / 2;
+
+    for (let i = 0; i < waveform.length - 1; i += 1) {
+        let x1 = (i / waveform.length) * width * 1.25; // Direct calculation for x1
+
+        // Directly use scaled waveform values
+        let y1 = yCenter - ((waveform[i] * height / 2) * amp);
+
+        let x2 = ((i + 1) / waveform.length) * width * 1.25; // Direct calculation for x2
+
+        // Directly use scaled waveform values
+        let y2 = yCenter - ((waveform[i + 1] * height / 2) * amp);
+
+        let step = 1 / resolution;
+        for (let j = 0; j <= resolution; j++) {
+            let interX = lerp(x1, x2, j * step);
+            let interY = lerp(y1, y2, j * step);
+            curveVertex(interX, interY);
+        }
+    }
+    endShape();
 }
 
 function draw() {
