@@ -36,7 +36,7 @@ function showInitialScreen() {
 function showSpectrum() {
 	fft_noise_gate()
 	let spectrum = fft.analyze();
-	let intensity_color = (fft.getEnergy('bass') + fft.getEnergy('lowMid') + 
+	let intensity_color = (fft.getEnergy('bass') + fft.gpigetEnergy('lowMid') + 
 						   fft.getEnergy('mid') + fft.getEnergy('highMid') + fft.getEnergy('treble'))/4
 	stroke(intensity_color);
 	fill(intensity_color, 255-intensity_color,0)
@@ -81,24 +81,19 @@ function showWaveform() {
     noFill();
     beginShape();
 
-    let resolution = Math.max(1, Math.floor(waveform.length / (250 * pixelRatio))); // Adjust resolution based on pixel ratio
+    let resolution = 4
     let yCenter = height / 2;
 
-    for (let i = 0; i < waveform.length - 1; i += 1) {
+    for (let i = 0; i < waveform.length - 3; i += 4) {
         let x1 = (i / waveform.length) * width * 1.25; // Direct calculation for x1
-
-        // Directly use scaled waveform values
         let y1 = yCenter - ((waveform[i] * height / 2) * amp);
 
         let x2 = ((i + 1) / waveform.length) * width * 1.25; // Direct calculation for x2
-
-        // Directly use scaled waveform values
         let y2 = yCenter - ((waveform[i + 1] * height / 2) * amp);
 
-        let step = 1 / resolution;
         for (let j = 0; j <= resolution; j++) {
-            let interX = lerp(x1, x2, j * step);
-            let interY = lerp(y1, y2, j * step);
+            let interX = lerp(x1, x2, j);
+            let interY = lerp(y1, y2, j);
             curveVertex(interX, interY);
         }
     }
