@@ -56,49 +56,41 @@ function showWaveform() {
     fft_noise_gate();
     waveform = fft.waveform(bins);
 
-	waveform = waveform.map(value => float(value * mobileMultiplier));
-    distinctCount = new Set(waveform).size;
+    // Limit the search to the first quarter of the waveform array
+    let quarterLength = Math.floor(waveform.length * 0.5);
+    let minIndex = waveform.slice(0, quarterLength).indexOf(Math.min(...waveform.slice(0, quarterLength)));
 
-    displayDebugOverlay();
-
-    const pixelRatio = window.devicePixelRatio || 1;
-
-    // Apply scaling directly to the waveform array
-
-    // Limit the search to the first 20% of the waveform array
-    let quarterLength = Math.floor(waveform.length * 0.2);
-    let minIndex = 0;
-    let minValue = waveform[0];
-    for (let i = 1; i < quarterLength; i++) {
-        if (waveform[i] < minValue) {
-            minValue = waveform[i];
-            minIndex = i;
-        }
-    }
-    waveform = waveform.slice(minIndex).concat(waveform.slice(0, minIndex));
+    // Align the waveform based on the calculated minimum index
+    waveform = waveform.slice(minIndex).concat(waveform.slice(1, minIndex));
 
     stroke(255);
     noFill();
     beginShape();
+    
+    // Interpolation settings
+    let resolution = 2; // Increase this value for smoother curves by adding intermediate points
+    for (let i = 0; i < waveform.length - 1; i += 2) {
+        let x1 = map(i, 0, waveform.length, 0, width * 2);
+        let y1 = height / 2;
+        let y_offset1 = map(waveform[i], -1, 1, -height / amp, height / amp);
+        y1 = float(y1 - y_offset1);
 
-    let resolution = 4
-    let yCenter = height / 2;
+        let x2 = map(i + 2, 0, waveform.length, 0, width * 2);
+        let y2 = height / 2;
+        let y_offset2 = map(waveform[i + 2], -1, 1, -height / amp, height / amp);
+        y2 = float(y2 - y_offset2);
 
-    for (let i = 0; i < waveform.length - 3; i += 4) {
-        let x1 = (i / waveform.length) * width * 1.25; // Direct calculation for x1
-        let y1 = yCenter - ((waveform[i] * height / 2) * amp);
-
-        let x2 = ((i + 1) / waveform.length) * width * 1.25; // Direct calculation for x2
-        let y2 = yCenter - ((waveform[i + 1] * height / 2) * amp);
-
-        for (let j = 0; j <= resolution; j++) {
-            let interX = lerp(x1, x2, j);
-            let interY = lerp(y1, y2, j);
-            curveVertex(interX, interY);
+        // Draw more points between each pair of vertices using interpolation
+        for (let j = 0; j < resolution; j++) {
+            let interX = lerp(x1, x2, j / resolution);
+            let interY = lerp(y1, y2, j / resolution);
+            vertex(interX, interY);
         }
     }
+    
     endShape();
 }
+
 
 function draw() {
 	background(0);
