@@ -1,4 +1,4 @@
-let fft, amp, bins;
+let fft, amp, bins, slider;
 let waveform_mode, spectrum_mode, micAccessGranted, anchor_toggle = false;
 let initialScreen = true;
 let distinctCount = 0
@@ -7,7 +7,8 @@ function setup() {
 	createCanvas(windowWidth, windowHeight);
 	background(0);
 	fft = new p5.FFT(0.7,2048);
-	amp = 1
+	amp = 2
+	slider = new Slider(width * 31 / 32, height / 8, width, height, 4, 2);
 	frameRate(30);
 	stroke(255);
 	strokeWeight(2)
@@ -47,6 +48,8 @@ function showSpectrum() {
 	//console.log(spectrum)
 }
 function showWaveform() {
+	slider.handleInput();
+	slider.show();
     fft_noise_gate()
 	waveform = fft.waveform(bins);
 	distinctCount = new Set(waveform).size;
