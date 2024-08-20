@@ -9,6 +9,9 @@ function displayDebugOverlay(){
         textSize(constrain(((width>>6)*(height>>6))/4, 12, 64));
         textAlign(LEFT, TOP);
         text("Is mobile: " + isMobile(), width/16, height/16*3);
+        textSize(constrain(((width>>6)*(height>>6))/4, 12, 64));
+        textAlign(LEFT, TOP);
+        text("Anchor mode: " + anchor_toggle, width/16, height/16*4);
 
         textSize(constrain(((width>>6)*(height>>6))/4, 12, 64));
         textAlign(RIGHT, TOP);

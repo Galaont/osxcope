@@ -1,5 +1,5 @@
 let swipeStartX, swipeEndX, swipeDistanceX, swipeStartY;
-const mobileMultiplier = isMobile() ? 10 : 1;
+const mobileMultiplier = isMobile() ? 32 : 2;
 
 function isMobile() {
     // Use a combination of touch support, user-agent checks, and platform checks
@@ -41,6 +41,7 @@ function inputEnded() {
 		waveform_mode = false;
 		spectrum_mode = true;
 	} else if (swipeDistanceX < -xDistanceThreshold) { // Swipe left (Waveform mode)
+		if (waveform_mode) anchor_toggle = !anchor_toggle
 		initialScreen = false;
 		waveform_mode = true;
 		spectrum_mode = false;

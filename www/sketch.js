@@ -1,17 +1,13 @@
 let fft, amp, bins;
-let waveform_mode, spectrum_mode, micAccessGranted = false;
+let waveform_mode, spectrum_mode, micAccessGranted, anchor_toggle = false;
 let initialScreen = true;
 let distinctCount = 0
 
 function setup() {
 	createCanvas(windowWidth, windowHeight);
-	//pixelDensity(window.devicePixelRatio);
-	//pixelDensity(1)
 	background(0);
-	//bins=1024
-	fft = new p5.FFT();
-	//fft = new p5.AnalyzerFFT()
-	amp = 2
+	fft = new p5.FFT(0.7,2048);
+	amp = 1
 	frameRate(30);
 	stroke(255);
 	strokeWeight(2)
@@ -51,35 +47,39 @@ function showSpectrum() {
 	//console.log(spectrum)
 }
 function showWaveform() {
-    fft_noise_gate();
+    fft_noise_gate()
 	waveform = fft.waveform(bins);
-	waveform = waveform.map(value => float(value * mobileMultiplier)*amp);
 	distinctCount = new Set(waveform).size;
 
-	displayDebugOverlay()
-    // Limit the search to the first quarter of the waveform array
-    let quarterLength = Math.floor(waveform.length * 0.5);
-    let minIndex = waveform.slice(0, quarterLength).indexOf(Math.min(...waveform.slice(0, quarterLength)));
+	waveform = waveform.map(value => value * mobileMultiplier*amp);
 
-    // Align the waveform based on the calculated minimum index
-    waveform = waveform.slice(minIndex).concat(waveform.slice(1, minIndex));
+	displayDebugOverlay()
+
+	if (anchor_toggle){
+    // Limit the search to the first quarter of the waveform array
+    	let quarterLength = Math.floor(waveform.length * 0.5);
+    	let minIndex = waveform.slice(0, quarterLength).indexOf(Math.min(...waveform.slice(0, quarterLength)));
+
+    	// Align the waveform based on the calculated minimum index
+    	waveform = waveform.slice(minIndex).concat(waveform.slice(1, minIndex));
+	}
 
     stroke(255);
     noFill();
     beginShape();
     
     // Interpolation settings
-    let resolution = 2; // Increase this value for smoother curves by adding intermediate points
+    let resolution = 16; // Increase this value for smoother curves by adding intermediate points
     for (let i = 0; i < waveform.length - 1; i += 2) {
         let x1 = map(i, 0, waveform.length, 0, width * 2);
         let y1 = height / 2;
-        let y_offset1 = map(waveform[i], -1, 1, -height / amp, height / amp);
-        y1 = float(y1 - y_offset1);
+        let y_offset1 = map(waveform[i], -1*mobileMultiplier, 1*mobileMultiplier, -height/2, height/2);
+        y1 = y1 - y_offset1;
 
         let x2 = map(i + 2, 0, waveform.length, 0, width * 2);
         let y2 = height / 2;
-        let y_offset2 = map(waveform[i + 2], -1, 1, -height / amp, height / amp);
-        y2 = float(y2 - y_offset2);
+        let y_offset2 = map(waveform[i + 2], -1*mobileMultiplier, 1*mobileMultiplier, -height/2, height/2);
+        y2 = y2 - y_offset2;
 
         // Draw more points between each pair of vertices using interpolation
         for (let j = 0; j < resolution; j++) {
