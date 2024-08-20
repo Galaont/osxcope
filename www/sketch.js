@@ -6,16 +6,15 @@ let distinctCount = 0
 function setup() {
 	createCanvas(windowWidth, windowHeight);
 	//pixelDensity(window.devicePixelRatio);
-	pixelDensity(1)
+	//pixelDensity(1)
 	background(0);
-	bins=8192
-	fft = new p5.FFT(0.7, bins);
+	//bins=1024
+	fft = new p5.FFT();
 	//fft = new p5.AnalyzerFFT()
 	amp = 2
 	frameRate(30);
 	stroke(255);
 	strokeWeight(2)
-	angleMode(DEGREES);
 }
 
 function windowResized() {
@@ -36,7 +35,7 @@ function showInitialScreen() {
 function showSpectrum() {
 	fft_noise_gate()
 	let spectrum = fft.analyze();
-	let intensity_color = (fft.getEnergy('bass') + fft.gpigetEnergy('lowMid') + 
+	let intensity_color = (fft.getEnergy('bass') + fft.getEnergy('lowMid') + 
 						   fft.getEnergy('mid') + fft.getEnergy('highMid') + fft.getEnergy('treble'))/4
 	stroke(intensity_color);
 	fill(intensity_color, 255-intensity_color,0)
@@ -51,11 +50,13 @@ function showSpectrum() {
 	endShape();
 	//console.log(spectrum)
 }
-
 function showWaveform() {
     fft_noise_gate();
-    waveform = fft.waveform(bins);
+	waveform = fft.waveform(bins);
+	waveform = waveform.map(value => float(value * mobileMultiplier)*amp);
+	distinctCount = new Set(waveform).size;
 
+	displayDebugOverlay()
     // Limit the search to the first quarter of the waveform array
     let quarterLength = Math.floor(waveform.length * 0.5);
     let minIndex = waveform.slice(0, quarterLength).indexOf(Math.min(...waveform.slice(0, quarterLength)));
@@ -91,7 +92,6 @@ function showWaveform() {
     endShape();
 }
 
-
 function draw() {
 	background(0);
 	if (initialScreen) {
@@ -99,6 +99,10 @@ function draw() {
 	} else if (spectrum_mode) {
 		showSpectrum()
 	}else if (waveform_mode) {
+		stroke(255);
+		strokeWeight(2);
+		noFill();
+
 		showWaveform()
 	}
 }
