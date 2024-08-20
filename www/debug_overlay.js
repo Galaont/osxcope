@@ -1,5 +1,5 @@
 function displayDebugOverlay(){
-    if (waveform_mode){
+    if (waveform_mode && debugOverlayVisible){
         textSize(constrain(((width>>6)*(height>>6))/4, 12, 64));
         textAlign(LEFT, TOP);
         text("height: " + height + " | width: " + width, width/16, height/16);

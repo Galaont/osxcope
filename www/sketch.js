@@ -67,11 +67,7 @@ function showWaveform() {
     	waveform = waveform.slice(minIndex).concat(waveform.slice(1, minIndex));
 	}
 
-    stroke(255);
-    noFill();
     beginShape();
-    
-    // Interpolation settings
     let resolution = 16; // Increase this value for smoother curves by adding intermediate points
     for (let i = 0; i < waveform.length - 1; i += 2) {
         let x1 = map(i, 0, waveform.length, 0, width * 2);

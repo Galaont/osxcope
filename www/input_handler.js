@@ -1,4 +1,5 @@
-let swipeStartX, swipeEndX, swipeDistanceX, swipeStartY;
+let swipeStartX, swipeEndX, swipeDistanceX, swipeStartY, swipeEndY, swipeDistanceY;
+let debugOverlayVisible = false; // Track visibility of debug overlay
 const mobileMultiplier = isMobile() ? 32 : 2;
 
 function isMobile() {
@@ -21,9 +22,20 @@ function inputEnded() {
 		return;
 	  }
 	if (!micAccessGranted) startMic()
-	swipeEndX = mouseX || touches[0]?.x || swipeStartX; // Handle touch and mouse
-	swipeDistanceX = swipeEndX - swipeStartX;
-	let xDistanceThreshold = width>>2
+
+	swipeEndX = mouseX || touches[0]?.x || swipeStartX;
+    swipeEndY = mouseY || touches[0]?.y || swipeStartY;
+    swipeDistanceX = swipeEndX - swipeStartX;
+    swipeDistanceY = swipeEndY - swipeStartY;
+	let xDistanceThreshold = width/4
+	let yDistanceThreshold = height/3;
+    if (Math.abs(swipeDistanceY) > yDistanceThreshold) {
+        if (swipeDistanceY > 0) { // Swipe up
+            debugOverlayVisible = true;
+        } else if (swipeDistanceY < 0) { // Swipe down
+            debugOverlayVisible = false;
+        }
+    }
 	if (swipeDistanceX > xDistanceThreshold) { // Swipe right (Spectrum mode)
 		initialScreen = false;
 		waveform_mode = false;
