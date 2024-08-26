@@ -24,6 +24,6 @@ function displayDebugOverlay(){
         text("Distinct waveform values: " + distinctCount, width/16*15, height/16*3);        
         textSize(constrain(((width>>6)*(height>>6))/4, 12, 64));
         textAlign(RIGHT, TOP);
-        text("Waveform length: " + waveform.length, width/16*15, height/16*4);
+        text("Waveform minimum: " + Math.min(...waveform), width/16*15, height/16*4);
     }
 }

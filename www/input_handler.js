@@ -1,6 +1,6 @@
 let swipeStartX, swipeEndX, swipeDistanceX, swipeStartY, swipeEndY, swipeDistanceY;
 let debugOverlayVisible = false; // Track visibility of debug overlay
-const mobileMultiplier = isMobile() ? 32 : 2;
+const mobileMultiplier = isMobile() ? 64 : 16;
 
 function isMobile() {
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;

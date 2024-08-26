@@ -5,12 +5,12 @@ function startMic() {
  
     mic = new p5.AudioIn();
  
-    lp_filter = new p5.LowPass();
-    hp_filter = new p5.HighPass();
-    lp_filter.freq(18000)
-    lp_filter.disconnect()
-    hp_filter.freq(25)
-    hp_filter.disconnect()
+    //lp_filter = new p5.LowPass();
+    //hp_filter = new p5.HighPass();
+    //lp_filter.freq(18000)
+    //lp_filter.disconnect()
+    //hp_filter.freq(25)
+    //hp_filter.disconnect()
  
 	for (let i = 0; i<(mobileMultiplier);i++){
 		mic.start()
@@ -23,9 +23,9 @@ function startMic() {
 	micLevel = mic.getLevel();
 	//console.log(micLevel)
 	if (micLevel > minAmpThreshold) {
-		lp_filter.process(mic)
-		hp_filter.process(lp_filter)
-		fft.setInput(hp_filter);
+		//lp_filter.process(mic)
+		//hp_filter.process(lp_filter)
+		fft.setInput(mic);
 	 }else{
 		mic.disconnect()
 	}

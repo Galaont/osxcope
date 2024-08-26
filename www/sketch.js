@@ -4,18 +4,21 @@ let initialScreen = true;
 let distinctCount = 0
 
 function setup() {
-	createCanvas(windowWidth, windowHeight);
-	background(0);
-	fft = new p5.FFT(0.7,2048);
-	amp = 2
-	slider = new Slider(width * 31 / 32, height / 8, width, height, 4, 2);
-	frameRate(30);
-	stroke(255);
-	strokeWeight(2)
+    createCanvas(windowWidth, windowHeight);
+    amp = 1;
+    slider = new Slider(windowWidth, windowHeight, 1, amp);
+    background(0);
+    fft = new p5.FFT(0.1, 2048);
+    frameRate(30);
+    stroke(255);
+    strokeWeight(2);
 }
 
 function windowResized() {
-	resizeCanvas(windowWidth, windowHeight);
+    resizeCanvas(windowWidth, windowHeight);
+    slider.updateDimensions(windowWidth, windowHeight);
+    slider.updatePositionFromAmp(amp);
+    background(0); // Clear the background
 }
 
 function showInitialScreen() {
@@ -48,48 +51,35 @@ function showSpectrum() {
 	//console.log(spectrum)
 }
 function showWaveform() {
-	slider.handleInput();
-	slider.show();
-    fft_noise_gate()
-	waveform = fft.waveform(bins);
-	distinctCount = new Set(waveform).size;
+    slider.handleInput();
+    slider.show();
+    fft_noise_gate();
+    waveform = fft.waveform(bins);
+    distinctCount = new Set(waveform).size;
 
-	waveform = waveform.map(value => value * mobileMultiplier*amp);
+    displayDebugOverlay();
 
-	displayDebugOverlay()
+    if (anchor_toggle) {
+        // Limit the search to the first quarter of the waveform array
+        let quarterLength = Math.floor(waveform.length * 0.5);
+        let minIndex = waveform.slice(0, quarterLength).indexOf(Math.min(...waveform.slice(0, quarterLength)));
 
-	if (anchor_toggle){
-    // Limit the search to the first quarter of the waveform array
-    	let quarterLength = Math.floor(waveform.length * 0.5);
-    	let minIndex = waveform.slice(0, quarterLength).indexOf(Math.min(...waveform.slice(0, quarterLength)));
-
-    	// Align the waveform based on the calculated minimum index
-    	waveform = waveform.slice(minIndex).concat(waveform.slice(1, minIndex));
-	}
+        // Align the waveform based on the calculated minimum index
+        waveform = waveform.slice(minIndex).concat(waveform.slice(1, minIndex));
+    }
 
     beginShape();
-    let resolution = 16; // Increase this value for smoother curves by adding intermediate points
-    for (let i = 0; i < waveform.length - 1; i += 2) {
+    for (let i = 0; i < waveform.length - 2; i += 2) {
         let x1 = map(i, 0, waveform.length, 0, width * 2);
         let y1 = height / 2;
-        let y_offset1 = map(waveform[i], -1*mobileMultiplier, 1*mobileMultiplier, -height/2, height/2);
-        y1 = y1 - y_offset1;
-
-        let x2 = map(i + 2, 0, waveform.length, 0, width * 2);
-        let y2 = height / 2;
-        let y_offset2 = map(waveform[i + 2], -1*mobileMultiplier, 1*mobileMultiplier, -height/2, height/2);
-        y2 = y2 - y_offset2;
-
-        // Draw more points between each pair of vertices using interpolation
-        for (let j = 0; j < resolution; j++) {
-            let interX = lerp(x1, x2, j / resolution);
-            let interY = lerp(y1, y2, j / resolution);
-            vertex(interX, interY);
-        }
+        // Corrected y_offset1 calculation:
+        let y_offset1 = map(waveform[i], -1, 1, -amp * height / 2, amp * height / 2);
+        y1 -= y_offset1;
+        vertex(x1, y1);
     }
-    
     endShape();
 }
+
 
 function draw() {
 	background(0);
@@ -99,9 +89,8 @@ function draw() {
 		showSpectrum()
 	}else if (waveform_mode) {
 		stroke(255);
-		strokeWeight(2);
+		strokeWeight(2.4);
 		noFill();
-
 		showWaveform()
 	}
 }

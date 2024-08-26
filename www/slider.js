@@ -1,87 +1,78 @@
 class Slider {
-    constructor(startX, startY, width, height, roundness, initialAmp) {
-        this.slider_line = {
-            startX: startX,
-            startY: startY,
-            end_y: height - (height / 8),
-        };
-        this.slider_rect = {
-            startX: startX - (width / 64),
-            width: width / 32,
-            height: height / 8,
-            roundness: roundness,
-        };
-        this.dragging = false;
+    constructor(width, height, roundness, initialAmp) {
+        this.updateDimensions(width, height); // Initialize positions and dimensions
+        this.roundness = roundness;
+        this.initialAmp = initialAmp;
         this.isVisible = false;
-        this.opacity = 0; // Start fully transparent
-        this.lastActiveTime = 0; // Track the last interaction time
-        
-        // Initialize the slider position based on the amp value
-        this.currentY = map(initialAmp, 0.1, 10, this.slider_line.end_y - (this.slider_rect.height / 2), this.slider_line.startY + (this.slider_rect.height / 2));
-        this.offsetY = 0;
+        this.opacity = 0;
+        this.lastActiveTime = 0;
+        this.dragging = false;
+        this.updatePositionFromAmp(initialAmp);
+    }
+
+    updateDimensions(newWidth, newHeight) {
+        this.width = newWidth;
+        this.height = newHeight;
+        this.sliderX = this.width * 31 / 32;
+        this.sliderYStart = this.height / 8;
+        this.sliderYEnd = this.height - this.sliderYStart;
+
+        this.rectWidth = this.width / 32;
+        this.rectHeight = this.height / 8;
+        this.rectX = this.sliderX - this.rectWidth / 2;
+    }
+
+    updatePositionFromAmp(amp) {
+        this.currentY = map(amp, 0.1, 3, this.sliderYEnd - this.rectHeight / 2, this.sliderYStart + this.rectHeight / 2);
     }
 
     show() {
-        if (!waveform_mode) return; // Only show the slider in waveform mode
-        
-        if (this.isVisible) {
-            // Handle fading based on inactivity
-            let timeSinceLastActive = millis() - this.lastActiveTime;
-            if (timeSinceLastActive > 2000) { // 2 seconds of inactivity
-                this.opacity = max(0, this.opacity - 10); // Fade out gradually
-                if (this.opacity === 0) this.isVisible = false;
-            } else {
-                this.opacity = min(255, this.opacity + 50); // Fade in quickly
-            }
-            
-            // Save the current drawing state
-            push();
-            
-            // Apply opacity to the line
-            stroke(255, this.opacity);
-            strokeWeight(2); // Adjust stroke weight if needed
-            line(this.slider_line.startX, this.slider_line.startY, this.slider_line.startX, this.slider_line.end_y);
-            
-            // Apply opacity to the rectangle outline and fill
-            noFill(); // Set fill to none for the outline
-            stroke(255, this.opacity); // Outline color with opacity
-            strokeWeight(2); // Adjust stroke weight if needed
-            rect(this.slider_rect.startX, this.currentY - (this.slider_rect.height / 2), this.slider_rect.width, this.slider_rect.height, this.slider_rect.roundness); // Draw outline
-            
-            fill(255, this.opacity); // Fill color with opacity
-            noStroke(); // Remove stroke for the fill
-            rect(this.slider_rect.startX, this.currentY - (this.slider_rect.height / 2), this.slider_rect.width, this.slider_rect.height, this.slider_rect.roundness); // Draw fill
-            
-            // Restore the previous drawing state
-            pop();
+        if (!waveform_mode || !this.isVisible) return;
+
+        const timeSinceLastActive = millis() - this.lastActiveTime;
+        if (timeSinceLastActive > 2000) {
+            this.opacity = max(0, this.opacity - 10);
+            if (this.opacity === 0) this.isVisible = false;
+        } else {
+            this.opacity = min(255, this.opacity + 50);
         }
+
+        push();
+        stroke(255, this.opacity);
+        strokeWeight(2);
+        line(this.sliderX, this.sliderYStart, this.sliderX, this.sliderYEnd);
+
+        fill(255, this.opacity);
+        rect(this.rectX, this.currentY - this.rectHeight / 2, this.rectWidth, this.rectHeight, this.roundness
+        );
+        pop();
     }
 
     handleInput() {
-        if (this.dragging) {
-            let currentY = mouseY || touches[0]?.y || this.slider_line.startY;
-            this.currentY = constrain(
-                currentY + this.offsetY,
-                this.slider_line.startY + (this.slider_rect.height / 2), // Lower bound based on center
-                this.slider_line.end_y - (this.slider_rect.height / 2) // Upper bound based on center
-            );
-            amp = map(this.currentY, this.slider_line.end_y - (this.slider_rect.height / 2), this.slider_line.startY + (this.slider_rect.height / 2), 0.1, 10);
-            this.lastActiveTime = millis(); // Update the activity timestamp
-        }
+        if (!this.dragging) return;
+
+        const currentY = mouseY || touches[0]?.y || this.sliderYStart;
+        this.currentY = constrain(
+            currentY,
+            this.sliderYStart + this.rectHeight / 2,
+            this.sliderYEnd - this.rectHeight / 2
+        );
+
+        amp = map( this.currentY, this.sliderYEnd - this.rectHeight / 2, this.sliderYStart + this.rectHeight / 2, 0.1, 3);
+        this.lastActiveTime = millis();
     }
 
     checkIfDragging() {
         if (!waveform_mode) return false;
-        
-        // Check if user clicked/touched the rightmost section of the screen
-        if (mouseX > width * 30 / 32 || touches[0]?.x > width * 30 / 32) {
-            this.isVisible = true; // Show the slider
-            this.lastActiveTime = millis(); // Reset the inactivity timer
+
+        if (mouseX > this.width * 30 / 32 || touches[0]?.x > this.width * 30 / 32) {
+            this.isVisible = true;
+            this.lastActiveTime = millis();
         }
-        
+
         if (this.isVisible) {
-            let xInRange = mouseX >= this.slider_rect.startX && mouseX <= this.slider_rect.startX + this.slider_rect.width;
-            let yInRange = mouseY >= this.currentY - (this.slider_rect.height / 2) && mouseY <= this.currentY + (this.slider_rect.height / 2);
+            const xInRange = mouseX >= this.rectX && mouseX <= this.rectX + this.rectWidth;
+            const yInRange = mouseY >= this.currentY - this.rectHeight / 2 && mouseY <= this.currentY + this.rectHeight / 2;
 
             if (xInRange && yInRange) {
                 this.dragging = true;
